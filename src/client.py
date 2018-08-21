@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 import sys
 import copy
+import numpy
 from PyQt5.Qt import QGraphicsView, QGraphicsItem, QApplication, Qt
 from PyQt5.Qt import QGraphicsScene, QPainter, QStyleOptionGraphicsItem
 from PyQt5.Qt import QGraphicsSceneMouseEvent
-from PyQt5.Qt import QKeyEvent, QMouseEvent
-from PyQt5.Qt import QImage
-from PyQt5.Qt import QPoint, QRectF, QPen
+from PyQt5.Qt import QKeyEvent, QMouseEvent, QTimer
+from PyQt5.Qt import QImage, QScreen
+from PyQt5.Qt import QPoint, QRectF, QPen, QRect
 
 
-class Agent(QGraphicsItem):
+class Body(QGraphicsItem):
     def __init__(self,parent, width, height):
         super().__init__(parent=parent)
         self.width = width
@@ -23,42 +24,39 @@ class Agent(QGraphicsItem):
         # paint.setBackground()
         paint.setPen(qpen)
         aspect = self.head_img.width() / self.head_img.height()
-        ratio = self.height
+        ratio = self.height * 0.2
         target = QRectF(0, 0, aspect*ratio, ratio)
         source = QRectF(0, 0, self.head_img.width(), self.head_img.height())
 
         paint.drawImage(target, self.head_img, source)
 
-    def mouseMoveEvent(self, e: QGraphicsSceneMouseEvent):
-        print("qa")
-
     def boundingRect(self):
         return QRectF(0, 0, self.width, self.height)
 
 
-class Window(QGraphicsView):
-    def __init__(self):
-        super().__init__()
+class Agent(QGraphicsView):
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
         fp = open("css/client.css", "r")
         self.setStyleSheet(fp.read())
         self.setCacheMode(QGraphicsView.CacheBackground)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        # self.setAttribute(Qt.WA_DeleteOnClose)
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
+        item = Body(self.parent(), self.width(), self.height())
 
         scene = QGraphicsScene()
-        item = Agent(self.parent(), self.width(), self.height())
         scene.addItem(item)
-        scene.setSceneRect(0, 0, self.width(), self.height())
+
         self.setScene(scene)
         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
-        self.tmp_pos = QPoint(0,0)
+        self.tmp_pos = QPoint(0, 0)
 
     def keyReleaseEvent(self, event: QKeyEvent):
         if event.key() == Qt.Key_Q:
             self.close()
 
     def mousePressEvent(self, e: QMouseEvent):
-        print(e.button())
         self.tmp_pos = e.pos()
 
     def mouseMoveEvent(self, e: QMouseEvent):
@@ -70,6 +68,20 @@ class Window(QGraphicsView):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = Window()
-    window.show()
+
+    agent = list()
+    n = 50
+    random_x = numpy.random.rand(n)
+    random_y = numpy.random.rand(n)
+
+    screen = app.primaryScreen() # type:QScreen
+    screen_height = screen.geometry().height()
+    screen_width = screen.geometry().width()
+
+    for i in range(n):
+        j = Agent()
+        j.move(QPoint(random_x[i]*screen_width, random_y[i]*screen_height))
+        j.show()
+        agent.append(j)
+
     sys.exit(app.exec())
